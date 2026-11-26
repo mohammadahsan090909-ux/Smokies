@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smoke Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#121110">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Smoke Tracker">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f1ec;--card:#fff;--ink:#1d1b19;--mute:#7a736b;--line:#e8e2da;--acc:#ff6b3d;--soft:#ffe3d8;--good:#2fa36b;--bad:#e5484d;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121110;--card:#1c1a18;--ink:#f3efe9;--mute:#9a9188;--line:#2d2925;--acc:#ff7a4d;--soft:#3a2419;--good:#3ccf8e;--bad:#ff6369;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121110;--card:#1c1a18;--ink:#f3efe9;--mute:#9a9188;--line:#2d2925;--acc:#ff7a4d;--soft:#3a2419;--good:#3ccf8e;--bad:#ff6369;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:28px;letter-spacing:-.02em;margin:6px 0 2px}
+.sub{color:var(--mute);font-size:14px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:14px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--mute);margin:0 0 12px;font-weight:600}
+.hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.ring{position:relative;width:150px;height:150px;flex:none}
+.ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .n b{font-size:44px;line-height:1;letter-spacing:-.03em}
+.ring .n span{font-size:12px;color:var(--mute);margin-top:4px}
+.since{flex:1;min-width:160px}
+.since .big{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.since .lbl{color:var(--mute);font-size:13px}
+.msg{margin-top:10px;font-size:14px;background:var(--soft);padding:9px 12px;border-radius:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);padding:8px 13px;border-radius:99px;font-size:14px;cursor:pointer;font-family:inherit}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.log{width:100%;border:0;background:var(--acc);color:#fff;font-size:18px;font-weight:700;padding:17px;border-radius:16px;cursor:pointer;font-family:inherit;transition:transform .08s}
+.log:active{transform:scale(.98)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:560px){.grid{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--bg);border-radius:16px;padding:13px}
+.stat b{display:block;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--mute)}
+.up{color:var(--bad)}.down{color:var(--good)}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--mute);font-size:10px;font-family:inherit}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.row:first-of-type{border-top:0}
+.row small{color:var(--mute);margin-left:8px}
+.x{background:none;border:0;color:var(--mute);font-size:18px;cursor:pointer;padding:2px 8px}
+.set{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.set label{font-size:12px;color:var(--mute);display:block}
+.set input{width:100%;margin-top:4px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px;font-family:inherit}
+.reset{margin-top:14px;background:none;border:1px solid var(--line);color:var(--mute);padding:9px 14px;border-radius:12px;cursor:pointer;font-family:inherit}
+.empty{color:var(--mute);font-size:14px;padding:8px 0}
+</style></head>
+<body><div class="wrap">
+<h1>Smoke Tracker</h1>
+<p class="sub">Log every cigarette. See the patterns. Bring the number down.</p>
+
+<div class="card">
+  <div class="hero">
+    <div class="ring"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="62" fill="none" stroke="var(--line)" stroke-width="14"/><circle id="arc" cx="75" cy="75" r="62" fill="none" stroke="var(--acc)" stroke-width="14" stroke-linecap="round" stroke-dasharray="0 390" transform="rotate(-90 75 75)" style="transition:stroke-dasharray .6s"/></svg>
+      <div class="n"><b id="today">0</b><span id="goalTxt">of 10 today</span></div></div>
+    <div class="since"><div class="lbl">Time since last cigarette</div><div class="big" id="since">—</div><div class="msg" id="msg"></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>What triggered it?</h2>
+  <div class="chips" id="chips"></div>
+  <button class="log" id="logBtn">+ Log a cigarette</button>
+</div>
+
+<div class="card"><h2>At a glance</h2><div class="grid" id="stats"></div></div>
+<div class="card"><h2>Last 14 days</h2><div id="bars"></div></div>
+<div class="card"><h2>When you smoke</h2><div id="hours"></div></div>
+<div class="card"><h2>Deeper insights</h2><div class="grid" id="stats2"></div></div>
+<div class="card"><h2>Weekday pattern</h2><div id="wk"></div></div>
+<div class="card"><h2>12-week heatmap</h2><div id="heat"></div></div>
+<div class="card"><h2>Triggers</h2><div id="donut"></div></div>
+<div class="card"><h2>Recent</h2><div id="recent"></div></div>
+
+<div class="card"><h2>Backup</h2>
+  <button class="reset" id="exp" style="margin:0 8px 0 0">Show my data</button><button class="reset" id="imp" style="margin:0">Import pasted data</button>
+  <textarea id="bk" rows="4" placeholder="Tap Show my data and copy it. To import, paste data here and tap Import." style="width:100%;margin-top:10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:13px;font-family:inherit"></textarea>
+</div>
+<div class="card"><h2>Settings</h2>
+  <div class="set">
+    <div><label>Daily goal</label><input id="goal" type="number" min="0" inputmode="numeric"></div>
+    <div><label>Pack price (₹)</label><input id="price" type="number" min="0" step="0.5" inputmode="decimal"></div>
+    <div><label>Cigs per pack</label><input id="pack" type="number" min="1" inputmode="numeric"></div>
+  </div>
+  <button class="reset" id="reset">Reset all data</button>
+</div>
+</div>
+<script>
+var K='smoke-tracker-v1',S={logs:[],goal:10,price:12,perPack:20},sel=null,armed=false;
+try{var r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+if(S.cur!=='INR'){S.price=350;S.cur='INR'}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+var TR=['Stress','Coffee','After meal','Social','Boredom','Craving','Other'];
+var COL=['#ff6b3d','#f5a524','#2fa36b','#3b82f6','#8b5cf6','#ec4899','#94a3b8'];
+var $=function(i){return document.getElementById(i)};
+function dk(d){d=new Date(d);return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()}
+function daysAgo(n){var d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-n);return d}
+function counts(){var m={};S.logs.forEach(function(l){var k=dk(l.t);m[k]=(m[k]||0)+1});return m}
+function range(n){var m=counts(),a=[];for(var i=n-1;i>=0;i--){var d=daysAgo(i);a.push({d:d,c:m[dk(d)]||0})}return a}
+function money(x){var f=x>=100?0:2;return '₹'+x.toLocaleString('en-IN',{minimumFractionDigits:f,maximumFractionDigits:f})}
+function fmtGap(ms){var m=Math.floor(ms/60000),h=Math.floor(m/60),d=Math.floor(h/24);if(d>=1)return d+'d '+(h%24)+'h';if(h>=1)return h+'h '+(m%60)+'m';return m+'m'}
+
+$('chips').innerHTML=TR.map(function(t){return '<button class="chip" data-t="'+t+'">'+t+'</button>'}).join('');
+$('chips').onclick=function(e){var t=e.target.getAttribute('data-t');if(!t)return;sel=(sel===t)?null:t;
+  [].forEach.call(document.querySelectorAll('.chip'),function(c){c.classList.toggle('on',c.getAttribute('data-t')===sel)})};
+$('logBtn').onclick=function(){S.logs.push({t:Date.now(),tr:sel});sel=null;
+  [].forEach.call(document.querySelectorAll('.chip'),function(c){c.classList.remove('on')});save();render()};
+$('goal').value=S.goal;$('price').value=S.price;$('pack').value=S.perPack;
+$('goal').onchange=function(){S.goal=Math.max(0,+this.value||0);save();render()};
+$('price').onchange=function(){S.price=Math.max(0,+this.value||0);save();render()};
+$('pack').onchange=function(){S.perPack=Math.max(1,+this.value||20);save();render()};
+$('reset').onclick=function(){if(!armed){armed=true;this.textContent='Tap again to erase everything';var b=this;setTimeout(function(){armed=false;b.textContent='Reset all data'},3500);return}
+  S.logs=[];armed=false;this.textContent='Reset all data';save();render()};
+$('recent').onclick=function(e){var t=e.target.getAttribute('data-del');if(!t)return;S.logs=S.logs.filter(function(l){return String(l.t)!==t});save();render()};
+
+function render(){
+  var m=counts(),today=m[dk(new Date())]||0,g=S.goal,cpc=S.price/S.perPack;
+  var pct=g>0?Math.min(today/g,1):(today?1:0),over=g>0?today>g:today>0;
+  var arc=$('arc');arc.style.strokeDasharray=(pct*389.6)+' 390';arc.style.stroke=over?'var(--bad)':'var(--acc)';
+  $('today').textContent=today;$('goalTxt').textContent='of '+g+' today';
+  $('msg').textContent=!S.logs.length?'Log your first cigarette to start the stats.':over?'Over your goal today. Tomorrow is a fresh start.':today>=g*0.8&&g>0?'Close to your limit. Try waiting 10 more minutes.':'You’re within your goal. Keep going.';
+  var r7=range(7),p7=range(14).slice(0,7);
+  var sum=function(a){return a.reduce(function(s,x){return s+x.c},0)};
+  var avg=sum(r7)/7,pavg=sum(p7)/7,total=S.logs.length;
+  var trend=pavg>0?Math.round((avg-pavg)/pavg*100):null;
+  var streak=0;if(S.logs.length){var first=Math.min.apply(null,S.logs.map(function(l){return l.t}));
+    for(var i=0;i<400;i++){var d=daysAgo(i);if(d.getTime()<first-86400000)break;if((m[dk(d)]||0)>g)break;streak++}}
+  var best=0,worst=0;Object.keys(m).forEach(function(k){if(m[k]>worst)worst=m[k]});
+  var todayLogs=S.logs.filter(function(l){return dk(l.t)===dk(new Date())}).map(function(l){return l.t}).sort();
+  var gap='—';if(todayLogs.length>1){var gs=0;for(var j=1;j<todayLogs.length;j++)gs+=todayLogs[j]-todayLogs[j-1];gap=fmtGap(gs/(todayLogs.length-1))}
+  var tr=trend===null?'<span>vs last week: n/a</span>':'<span class="'+(trend>0?'up':'down')+'">'+(trend>0?'▲ ':'▼ ')+Math.abs(trend)+'% vs last week</span>';
+  var cards=[
+    ['<b>'+avg.toFixed(1)+'</b>','7-day average<br>'+tr],
+    ['<b>'+money(today*cpc)+'</b>','Spent today'],
+    ['<b>'+money(sum(r7)*cpc)+'</b>','Spent, last 7 days'],
+    ['<b>'+money(total*cpc)+'</b>','Spent, all time'],
+    ['<b>'+total+'</b>','Total logged'],
+    ['<b>'+streak+'d</b>','Days within goal'],
+    ['<b>'+worst+'</b>','Heaviest day'],
+    ['<b>'+gap+'</b>','Avg gap today']];
+  $('stats').innerHTML=cards.map(function(c){return '<div class="stat">'+c[0]+'<span>'+c[1]+'</span></div>'}).join('');
+
+  // bar chart
+  var R=range(14),mx=Math.max(g,Math.max.apply(null,R.map(function(x){return x.c})),1),H=110,bw=340/14,s='<svg viewBox="0 0 340 135">';
+  R.forEach(function(x,i){var h=x.c/mx*H,y=H-h,c=g>0&&x.c>g?'var(--bad)':'var(--acc)',last=i===13;
+    s+='<rect x="'+(i*bw+4)+'" y="'+y+'" width="'+(bw-8)+'" height="'+Math.max(h,x.c?3:1.5)+'" rx="5" fill="'+(x.c?c:'var(--line)')+'" opacity="'+(last?1:.75)+'"/>';
+    if(x.c)s+='<text x="'+(i*bw+bw/2)+'" y="'+(y-4)+'" text-anchor="middle">'+x.c+'</text>';
+    s+='<text x="'+(i*bw+bw/2)+'" y="128" text-anchor="middle">'+'SMTWTFS'.charAt(x.d.getDay())+'</text>'});
+  if(g>0){var gy=H-g/mx*H;s+='<line x1="0" x2="340" y1="'+gy+'" y2="'+gy+'" stroke="var(--good)" stroke-dasharray="4 4" opacity=".8"/>'}
+  $('bars').innerHTML=s+'</svg>'+'<div class="legend"><span><i style="background:var(--acc)"></i>Within goal</span><span><i style="background:var(--bad)"></i>Over goal</span><span><i style="background:var(--good)"></i>Goal line</span></div>';
+
+  // hour chart
+  var hc=new Array(24).fill(0);S.logs.forEach(function(l){hc[new Date(l.t).getHours()]++});
+  var hm=Math.max.apply(null,hc.concat([1])),pk=hc.indexOf(Math.max.apply(null,hc)),hs='<svg viewBox="0 0 340 100">',w=340/24;
+  hc.forEach(function(c,h){var bh=c/hm*70;hs+='<rect x="'+(h*w+1.5)+'" y="'+(75-bh)+'" width="'+(w-3)+'" height="'+Math.max(bh,2)+'" rx="3" fill="'+(c&&h===pk?'var(--acc)':c?'var(--acc)':'var(--line)')+'" opacity="'+(c?(h===pk?1:.55):1)+'"/>'});
+  [0,6,12,18].forEach(function(h){hs+='<text x="'+(h*w+w/2)+'" y="92" text-anchor="middle">'+(h===0?'12a':h===12?'12p':h>12?(h-12)+'p':h+'a')+'</text>'});
+  var pkTxt=S.logs.length?'Your peak hour is '+(pk%12||12)+(pk<12?' AM':' PM')+'.':'No data yet.';
+  $('hours').innerHTML=hs+'</svg><div class="legend">'+pkTxt+'</div>';
+
+  // donut
+  var tc={};S.logs.forEach(function(l){var k=l.tr||'Untagged';tc[k]=(tc[k]||0)+1});
+  var keys=Object.keys(tc).sort(function(a,b){return tc[b]-tc[a]});
+  if(!keys.length){$('donut').innerHTML='<div class="empty">Tag a trigger when you log to see what drives your smoking.</div>'}
+  else{var C=2*Math.PI*45,off=0,ds='<svg viewBox="0 0 120 120" style="max-width:190px;margin:0 auto"><g transform="rotate(-90 60 60)">',lg='';
+    keys.forEach(function(k){var ix=TR.indexOf(k),col=ix>=0?COL[ix]:'#6b7280',f=tc[k]/total*C;
+      ds+='<circle cx="60" cy="60" r="45" fill="none" stroke="'+col+'" stroke-width="16" stroke-dasharray="'+f+' '+(C-f)+'" stroke-dashoffset="'+(-off)+'"/>';off+=f;
+      lg+='<span><i style="background:'+col+'"></i>'+k+' · '+Math.round(tc[k]/total*100)+'%</span>'});
+    $('donut').innerHTML=ds+'</g><text x="60" y="64" text-anchor="middle" style="font-size:16px;font-weight:700;fill:var(--ink)">'+total+'</text></svg><div class="legend">'+lg+'</div>'}
+
+  // recent
+  var rec=S.logs.slice().sort(function(a,b){return b.t-a.t}).slice(0,8);
+  $('recent').innerHTML=rec.length?rec.map(function(l){var d=new Date(l.t),isT=dk(l.t)===dk(new Date()),
+    lab=(isT?'Today':d.toLocaleDateString([],{month:'short',day:'numeric'}))+' · '+d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    return '<div class="row"><div>'+lab+'<small>'+(l.tr||'')+'</small></div><button class="x" data-del="'+l.t+'" aria-label="Delete">×</button></div>'}).join(''):'<div class="empty">Nothing logged yet.</div>';
+  extra(m,cpc,g);tick()}
+function extra(m,cpc,g){
+  var L=S.logs.slice().sort(function(a,b){return a.t-b.t}),n=L.length,i,d;
+  if(!n){$('stats2').innerHTML='<div class="empty" style="grid-column:1/-1">Insights appear once you log a few cigarettes.</div>';$('wk').innerHTML='';$('heat').innerHTML='';return}
+  var first=new Date(L[0].t);first.setHours(12,0,0,0);
+  var span=Math.max(1,Math.round((daysAgo(0)-first)/86400000)+1);
+  var lg=0;for(i=1;i<n;i++)lg=Math.max(lg,L[i].t-L[i-1].t);
+  var byd={},fs=[],ls=[];L.forEach(function(l){var k=dk(l.t);(byd[k]=byd[k]||[]).push(l.t)});
+  Object.keys(byd).forEach(function(k){var a=byd[k],f=new Date(a[0]),z=new Date(a[a.length-1]);fs.push(f.getHours()*60+f.getMinutes());ls.push(z.getHours()*60+z.getMinutes())});
+  var av=function(a){return a.reduce(function(s,x){return s+x},0)/a.length};
+  var clk=function(mn){mn=Math.round(mn);var h=Math.floor(mn/60)%24,mi=mn%60;return (h%12||12)+':'+(mi<10?'0':'')+mi+(h<12?' AM':' PM')};
+  var d30=range(Math.min(30,span)),hit=d30.filter(function(x){return x.c<=g}).length,free=0,saved=0;
+  for(i=0;i<span;i++){if(!m[dk(daysAgo(i))])free++}
+  for(i=1;i<span;i++){saved+=Math.max(g-(m[dk(daysAgo(i))]||0),0)}
+  var a7=range(7).reduce(function(s,x){return s+x.c},0)/7,now=new Date();
+  var mc=L.filter(function(l){var q=new Date(l.t);return q.getMonth()===now.getMonth()&&q.getFullYear()===now.getFullYear()}).length;
+  var wd=[0,0,0,0,0,0,0],wn=[0,0,0,0,0,0,0];
+  for(i=0;i<span;i++){d=daysAgo(i);wd[d.getDay()]+=m[dk(d)]||0;wn[d.getDay()]++}
+  var wa=wd.map(function(x,j){return wn[j]?x/wn[j]:0});
+  var wkE=(wa[0]+wa[6])/2,wkD=(wa[1]+wa[2]+wa[3]+wa[4]+wa[5])/5;
+  var cards=[
+    [fmtGap(lg),'Longest smoke-free stretch'],
+    [clk(av(fs)),'Avg first cigarette'],
+    [clk(av(ls)),'Avg last cigarette'],
+    [(n/span).toFixed(1),'Daily average, all time'],
+    [Math.round(hit/d30.length*100)+'%','Goal hit rate, last 30 days'],
+    [String(free),'Smoke-free days'],
+    [String(saved),'Cigarettes under goal'],
+    [money(saved*cpc),'Saved vs your goal'],
+    [mc+' · '+money(mc*cpc),'This month'],
+    [money(a7*30*cpc),'Projected monthly cost'],
+    [money(a7*365*cpc),'Projected yearly cost'],
+    [wkE.toFixed(1)+' / '+wkD.toFixed(1),'Weekend vs weekday avg'],
+    [Math.round(n*11/60)+'h','Rough life-time cost (~11 min each)']];
+  $('stats2').innerHTML=cards.map(function(c){return '<div class="stat"><b style="font-size:20px">'+c[0]+'</b><span>'+c[1]+'</span></div>'}).join('');
+  var names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],full=['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
+  var wm=Math.max.apply(null,wa.concat([.1])),pk=wa.indexOf(Math.max.apply(null,wa)),bw=340/7,s='<svg viewBox="0 0 340 125">';
+  wa.forEach(function(v,j){var h=v/wm*80;s+='<rect x="'+(j*bw+8)+'" y="'+(95-h)+'" width="'+(bw-16)+'" height="'+Math.max(h,2)+'" rx="7" fill="'+(v?'var(--acc)':'var(--line)')+'" opacity="'+(j===pk?1:.55)+'"/><text x="'+(j*bw+bw/2)+'" y="'+(90-h)+'" text-anchor="middle">'+v.toFixed(1)+'</text><text x="'+(j*bw+bw/2)+'" y="114" text-anchor="middle">'+names[j]+'</text>'});
+  $('wk').innerHTML=s+'</svg><div class="legend">Average per day. Heaviest: '+full[pk]+'.</div>';
+  var hmx=Math.max(g,1),dow=now.getDay(),hs='<svg viewBox="0 0 340 205">';
+  for(i=0;i<Object.keys(m).length;i++){}
+  Object.keys(m).forEach(function(k){hmx=Math.max(hmx,m[k])});
+  for(var c=0;c<12;c++){for(var r=0;r<7;r++){var off=(11-c)*7+(dow-r);if(off<0)continue;var dd=daysAgo(off),cc=m[dk(dd)]||0;
+    hs+='<rect x="'+(c*28.4+2)+'" y="'+(r*28+2)+'" width="25" height="25" rx="7" fill="'+(cc?(g>0&&cc>g?'var(--bad)':'var(--acc)'):'var(--line)')+'" opacity="'+(cc?(.3+.7*cc/hmx).toFixed(2):1)+'"/>'}}
+  $('heat').innerHTML=hs+'</svg><div class="legend">Each square is a day, oldest on the left. Darker means more; red means over goal.</div>';
+}
+function tick(){if(!S.logs.length){$('since').textContent='—';return}
+  var last=Math.max.apply(null,S.logs.map(function(l){return l.t}));$('since').textContent=fmtGap(Date.now()-last)}
+$('exp').onclick=function(){var b=$('bk');b.value=JSON.stringify(S);b.focus();b.select();try{navigator.clipboard.writeText(b.value)}catch(e){}};
+$('imp').onclick=function(){var b=$('bk');try{var o=JSON.parse(b.value);if(!Array.isArray(o.logs))throw 0;var seen={};S.logs.forEach(function(l){seen[l.t]=1});o.logs.forEach(function(l){if(l&&l.t&&!seen[l.t]){S.logs.push({t:+l.t,tr:l.tr||null});seen[l.t]=1}});
+  if(o.goal!=null)S.goal=o.goal;if(o.price!=null)S.price=o.price;if(o.perPack!=null)S.perPack=o.perPack;S.cur='INR';save();location.reload()}catch(e){b.value='';b.placeholder='That doesn’t look like valid data.'}};
+render();setInterval(tick,30000);
+</script><script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}</script>
+</body></html>
